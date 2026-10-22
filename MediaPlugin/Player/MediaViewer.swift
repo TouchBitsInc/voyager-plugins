@@ -223,6 +223,8 @@ final class MediaViewer: NSWindowController, NSWindowDelegate {
             // focus didn't come with the click — so the window is put at
             // its size once the animation would have ended, either way.
             window.setFrame(sourceFrame, display: false)
+            // Where it really started: no smaller than its minimum size.
+            let start = window.frame
             bringToFront()
             NSAnimationContext.runAnimationGroup { context in
                 context.duration = 0.35
@@ -233,7 +235,7 @@ final class MediaViewer: NSWindowController, NSWindowDelegate {
                 // Still where it started: the animation didn't run. Moved
                 // since — grown, reshaped to the video, or by the user — it
                 // stays as it is.
-                if window.frame == sourceFrame { window.setFrame(target, display: true) }
+                if window.frame == start { window.setFrame(target, display: true) }
             }
         }
     }

@@ -73,7 +73,7 @@ final class MediaPluginApp: NSObject, NSApplicationDelegate {
         // A page needs yt-dlp: without it, the page keeps its video, and
         // the settings show where to get it.
         if case .page = video, !VideoPlugins.shared.isInstalled {
-            handBack(requestID, to: request.requester)
+            post(.unhandled, request: requestID)
             return showSettings()
         }
 
@@ -124,16 +124,15 @@ final class MediaPluginApp: NSObject, NSApplicationDelegate {
         guard let folder = PluginProtocol.pluginFolder(id), var manifest = MediaSites.manifest else { return }
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         manifest.version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String
-        try? JSONEncoder().encode(manifest).write(to: folder.appending(path: PluginProtocol.manifestName))
-        var files: [URL] = []
+        // The scripts first, the manifest last and whole: Voyager reads the
+        // manifest when it changes, and its scripts must be there by then.
         for site in manifest.triggers.flatMap(\.sites) {
-            if let script = Bundle.main.url(forResource: site.script, withExtension: nil) { files.append(script) }
+            guard let script = Bundle.main.url(forResource: site.script, withExtension: nil),
+                  let data = try? Data(contentsOf: script)
+            else { continue }
+            try? data.write(to: folder.appending(path: site.script), options: .atomic)
         }
-        for file in files {
-            let copy = folder.appending(path: file.lastPathComponent)
-            try? FileManager.default.removeItem(at: copy)
-            try? FileManager.default.copyItem(at: file, to: copy)
-        }
+        try? JSONEncoder().encode(manifest).write(to: folder.appending(path: PluginProtocol.manifestName), options: .atomic)
     }
 
     // MARK: - Settings
