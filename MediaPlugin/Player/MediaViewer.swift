@@ -782,7 +782,10 @@ private final class ViewerWindow: NSWindow {
         case .leftMouseDown where onVideo(event.locationInWindow):
             if event.clickCount == 1 { clicksCount = isKeyWindow && NSApp.isActive }
             pressedAt = event.clickCount == 1 && clicksCount ? event.locationInWindow : nil
-            if event.clickCount == 2, clicksCount {
+            // Never the player's: a double-click it saw would take it full
+            // screen in a window of its own.
+            if event.clickCount >= 2 {
+                guard event.clickCount == 2, clicksCount else { return }
                 if styleMask.contains(.fullScreen) {
                     toggleFullScreen(nil)
                 } else {
