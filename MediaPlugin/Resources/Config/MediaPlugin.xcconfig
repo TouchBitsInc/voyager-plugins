@@ -27,6 +27,7 @@ INFOPLIST_KEY_LSApplicationCategoryType = public.app-category.utilities
 // that show.
 INFOPLIST_KEY_LSUIElement = YES
 MARKETING_VERSION = 1.0
+// Sparkle tells versions apart by this: one more for every release.
 CURRENT_PROJECT_VERSION = 1
 
 // MARK: - Identity
@@ -48,3 +49,12 @@ PRODUCT_MODULE_NAME = MediaPlugin
 // The Bundle Tools phase downloads the pinned tools into a cache in the
 // source folder, which a sandboxed script can't.
 ENABLE_USER_SCRIPT_SANDBOXING = NO
+
+// MARK: - Updates
+
+// Sparkle's appcast: the plugin's releases, newest first. Its downloads
+// are checked against SPARKLE_PUBLIC_KEY, whose private half — made once
+// with Sparkle's `generate_keys` on the Mac that makes releases — signs
+// each one there. Without a public key, no update is installed.
+SPARKLE_FEED_URL = https:/$()/github.com/TouchBitsInc/voyager-media-plugin/releases/latest/download/appcast.xml
+SPARKLE_PUBLIC_KEY =

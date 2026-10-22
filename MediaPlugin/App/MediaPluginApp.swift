@@ -1,4 +1,5 @@
 import AppKit
+import Sparkle
 
 /// The Media Plugin: plays and saves the videos Voyager hands it, in windows
 /// of its own, with yt-dlp — what a sandboxed App Store app can't do. An app
@@ -25,10 +26,18 @@ final class MediaPluginApp: NSObject, NSApplicationDelegate {
     }
 
     private let id = MediaSites.manifest?.id ?? "com.touchbits.voyager.media-plugin"
+    /// Sparkle: a new plugin — a new yt-dlp in it — found at launch,
+    /// downloaded meanwhile, and installed as the plugin quits.
+    let updates = SPUStandardUpdaterController(startingUpdater: false, updaterDelegate: nil, userDriverDelegate: nil)
     private var settings: NSWindow?
     private var quitting: Task<Void, Never>?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Only with a key to check updates against: a build without one
+        // doesn't update, rather than say it can't.
+        if let key = Bundle.main.infoDictionary?["SUPublicEDKey"] as? String, !key.isEmpty {
+            try? updates.updater.start()
+        }
         publishManifest()
         post(.ready)
         Downloads.shared.onIdle = { [weak self] in self?.quitIfIdle() }
@@ -140,7 +149,7 @@ final class MediaPluginApp: NSObject, NSApplicationDelegate {
     private func showSettings() {
         quitting?.cancel()
         if settings == nil {
-            let window = SettingsWindow.make()
+            let window = SettingsWindow.make(updater: updates.updater)
             window.delegate = self
             settings = window
         }

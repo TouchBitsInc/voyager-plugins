@@ -13,5 +13,18 @@
 			</array>
 		</dict>
 	</array>
+	<!-- Sparkle: where updates are listed, and the key they're signed with
+	     (MediaPlugin.xcconfig sets both). Checked at each launch, and
+	     installed by themselves as the plugin quits. -->
+	<key>SUFeedURL</key>
+	<string>$(SPARKLE_FEED_URL)</string>
+	<key>SUPublicEDKey</key>
+	<string>$(SPARKLE_PUBLIC_KEY)</string>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<key>SUAutomaticallyUpdate</key>
+	<true/>
+	<key>SUScheduledCheckInterval</key>
+	<integer>3600</integer>
 </dict>
 </plist>

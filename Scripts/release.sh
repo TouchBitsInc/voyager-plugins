@@ -1,7 +1,11 @@
 #!/bin/zsh
 # Builds the Media Plugin for release: archived, signed with the team's
 # Developer ID — the app and every program in the yt-dlp it brings —
-# notarized, stapled, and packed in a DMG to download.
+# notarized, stapled, and packed in a DMG to download; with the Sparkle
+# appcast that tells installed plugins about it.
+#
+# Each release needs CURRENT_PROJECT_VERSION one higher in
+# MediaPlugin.xcconfig: it's how Sparkle tells versions apart.
 #
 # Run it on the Mac that holds the Developer ID key (the CI Mac mini):
 #
@@ -18,7 +22,12 @@
 #   NOTARIZE=0 everything but notarizing and stapling — to try the build
 #              anywhere, with any identity
 #
-# Out: Plugins/MediaPlugin/build/Voyager-Media-Plugin-<version>.dmg
+# Out, in Plugins/MediaPlugin/build/updates:
+#   Voyager-Media-Plugin-<version>.dmg  the download
+#   appcast.xml                         the update feed, signed with the
+#                                       Sparkle key in this Mac's keychain
+# Both go up as assets of the GitHub release tagged <version>, which the
+# feed URL in MediaPlugin.xcconfig and the appcast's links point at.
 set -euo pipefail
 
 TEAM=8Z3UH5979Z
@@ -56,6 +65,7 @@ xcodebuild archive \
   -configuration Release \
   -destination "generic/platform=macOS" \
   -archivePath "$build/MediaPlugin.xcarchive" \
+  -clonedSourcePackagesDirPath "$build/SourcePackages" \
   CODE_SIGN_STYLE=Manual \
   CODE_SIGN_IDENTITY="$identity" \
   DEVELOPMENT_TEAM=$TEAM \
@@ -65,8 +75,24 @@ xcodebuild archive \
 app="$build/MediaPlugin.xcarchive/Products/Applications/Voyager Media Plugin.app"
 [[ -d "$app" ]] || { echo "error: the archive has no app — see the build log above" >&2; exit 1; }
 
+# Sparkle's helpers come signed by Sparkle, and Xcode re-signs only the
+# framework around them: each is signed as ours, inside out, as Sparkle's
+# documentation has it — then the framework, then the app, its
+# entitlements kept.
+echo "==> Signing Sparkle's helpers"
+sparkle="$app/Contents/Frameworks/Sparkle.framework"
+resign() { codesign --force --sign "$identity" --options runtime --timestamp "$@"; }
+resign "$sparkle/Versions/B/XPCServices/Installer.xpc"
+resign --preserve-metadata=entitlements "$sparkle/Versions/B/XPCServices/Downloader.xpc"
+resign "$sparkle/Versions/B/Autoupdate"
+resign "$sparkle/Versions/B/Updater.app"
+resign "$sparkle"
+resign --entitlements "$root/MediaPlugin/Resources/Config/MediaPlugin.entitlements" "$app"
+
 version=$(defaults read "$app/Contents/Info" CFBundleShortVersionString)
 name="Voyager-Media-Plugin-$version"
+feed=$(defaults read "$app/Contents/Info" SUFeedURL)
+publicKey=$(defaults read "$app/Contents/Info" SUPublicEDKey 2>/dev/null || true)
 
 echo "==> Checking the signature"
 codesign --verify --deep --strict --verbose=1 "$app"
@@ -106,4 +132,18 @@ if [[ "$notarize" == 1 ]]; then
   spctl --assess --type open --context context:primary-signature --verbose "$build/$name.dmg"
 fi
 
-echo "==> Done: $build/$name.dmg"
+echo "==> Writing the appcast"
+updates="$build/updates"
+mkdir -p "$updates"
+mv "$build/$name.dmg" "$updates/"
+if [[ -z "$publicKey" ]]; then
+  echo "    skipped: no SPARKLE_PUBLIC_KEY in MediaPlugin.xcconfig — run Sparkle's generate_keys on this Mac once, and put the public key there"
+else
+  # Links to the release's own assets: <repo>/releases/download/<version>/.
+  downloads="${feed%/latest/download/*}/download/$version/"
+  "$build/SourcePackages/artifacts/sparkle/Sparkle/bin/generate_appcast" \
+    --download-url-prefix "$downloads" "$updates"
+  echo "    $updates/appcast.xml"
+fi
+
+echo "==> Done: $updates/$name.dmg"

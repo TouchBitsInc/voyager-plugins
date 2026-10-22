@@ -1,4 +1,5 @@
 import AppKit
+import Sparkle
 import SwiftUI
 
 /// The plugin's window — all it shows when opened on its own: where saved
@@ -6,8 +7,8 @@ import SwiftUI
 /// Voyager's, in its Settings.
 enum SettingsWindow {
     @MainActor
-    static func make() -> NSWindow {
-        let view = SettingsView(settings: PluginSettings.shared, tool: VideoPlugins.shared)
+    static func make(updater: SPUUpdater) -> NSWindow {
+        let view = SettingsView(settings: PluginSettings.shared, tool: VideoPlugins.shared, updater: updater)
         let window = NSWindow(contentViewController: NSHostingController(rootView: view))
         window.title = String(localized: "Media Plugin")
         window.styleMask = [.titled, .closable, .miniaturizable]
@@ -19,6 +20,7 @@ enum SettingsWindow {
 private struct SettingsView: View {
     @Bindable var settings: PluginSettings
     let tool: VideoPlugins
+    let updater: SPUUpdater
 
     var body: some View {
         Form {
@@ -39,6 +41,23 @@ private struct SettingsView: View {
             }
 
             Section {
+                LabeledContent("Media Plugin") {
+                    HStack {
+                        Text("Version \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?")")
+                            .foregroundStyle(.secondary)
+                        Button("Check for Updates\u{2026}") { updater.checkForUpdates() }
+                            .disabled(!updater.canCheckForUpdates)
+                    }
+                }
+            } header: {
+                Text("Updates")
+            } footer: {
+                Text("Updates — a new yt-dlp among them — download by themselves and install when the plugin next quits.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section {
                 ToolRow(tool: tool)
             } header: {
                 Text("Tools")
@@ -49,7 +68,7 @@ private struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 520, height: 350)
+        .frame(width: 520, height: 470)
     }
 
     private func chooseFolder() {
