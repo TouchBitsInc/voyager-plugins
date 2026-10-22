@@ -24,7 +24,17 @@ final class Downloads {
         return destination
     }
 
+    /// Saved: marked as downloaded from the web, as a browser's downloads
+    /// are — quarantined, so the system checks what it is before it's
+    /// opened as anything that runs.
     func saved(_ file: URL) {
+        var values = URLResourceValues()
+        values.quarantineProperties = [
+            kLSQuarantineAgentNameKey as String: "Voyager Media Plugin",
+            kLSQuarantineTypeKey as String: kLSQuarantineTypeWebDownload as String,
+        ]
+        var marked = file
+        try? marked.setResourceValues(values)
         DistributedNotificationCenter.default().post(name: .init("com.apple.DownloadFileFinished"), object: file.path)
         done(file)
     }

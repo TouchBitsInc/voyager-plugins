@@ -41,7 +41,7 @@ root=${here:h}
 build="$root/build"
 notarize=${NOTARIZE:-1}
 
-identity=${IDENTITY:-$(security find-identity -v -p codesigning | grep -o "\"Developer ID Application: [^\"]*($TEAM)\"" | head -1 | tr -d '"')}
+identity=${IDENTITY:-$(security find-identity -v -p codesigning | grep -o "\"Developer ID Application: [^\"]*($TEAM)\"" | head -1 | tr -d '"' || true)}
 if [[ -z "$identity" ]]; then
   echo "error: no Developer ID Application identity for team $TEAM in the keychain (or name one in IDENTITY)" >&2
   exit 1

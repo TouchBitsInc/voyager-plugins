@@ -5,7 +5,7 @@ import Sparkle
 /// of its own, with yt-dlp — what a sandboxed App Store app can't do. An app
 /// without a Dock icon, started by Voyager when a video is clicked and gone
 /// once nothing's playing or saving. Started any other way — from Finder,
-/// or by Voyager to read it — it shows nothing; its settings — where saved
+/// say — it shows nothing; its settings — where saved
 /// videos go, and the yt-dlp it brings — open from Voyager's Settings.
 ///
 /// Voyager's side of it is `PluginProtocol`: a request comes as
@@ -38,7 +38,6 @@ final class MediaPluginApp: NSObject, NSApplicationDelegate {
         if let key = Bundle.main.infoDictionary?["SUPublicEDKey"] as? String, !key.isEmpty {
             try? updates.updater.start()
         }
-        publishManifest()
         post(.ready)
         Downloads.shared.onIdle = { [weak self] in self?.quitIfIdle() }
         // Nothing to show until it's asked: gone again if nothing is.
@@ -54,8 +53,6 @@ final class MediaPluginApp: NSObject, NSApplicationDelegate {
             case "settings":
                 showSettings()
             default:
-                // `register`: started to put its manifest where Voyager can
-                // read it, done at launch.
                 quitIfIdle()
             }
         }
@@ -124,24 +121,6 @@ final class MediaPluginApp: NSObject, NSApplicationDelegate {
             userInfo: nil,
             deliverImmediately: true
         )
-    }
-
-    /// The manifest and site scripts, copied where Voyager reads them — its
-    /// sandbox can't read an app in ~/Applications — with the plugin's
-    /// version. Every launch, so an update's reach Voyager.
-    private func publishManifest() {
-        guard let folder = PluginProtocol.pluginFolder(id), var manifest = MediaSites.manifest else { return }
-        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        manifest.version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String
-        // The scripts first, the manifest last and whole: Voyager reads the
-        // manifest when it changes, and its scripts must be there by then.
-        for site in manifest.triggers.flatMap(\.sites) {
-            guard let script = Bundle.main.url(forResource: site.script, withExtension: nil),
-                  let data = try? Data(contentsOf: script)
-            else { continue }
-            try? data.write(to: folder.appending(path: site.script), options: .atomic)
-        }
-        try? JSONEncoder().encode(manifest).write(to: folder.appending(path: PluginProtocol.manifestName), options: .atomic)
     }
 
     // MARK: - Settings
