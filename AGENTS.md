@@ -98,9 +98,65 @@ The choice is kept in the site's own storage.
 
 ## How we do the UI
 
-Case by case. Start from what people use a site for (X's timeline, an
-article's text, a video and its comments), then ask what crowds it, and
-pick the pattern that fits that site. Most often it's the bottom bar; when
+What we style is the **content river**: the feed or thread the site
+exists for (X's timeline, V2EX's topics and replies, RFD's deals, Weibo's
+posts). Everything else is arranged around it. Voyager's panel is
+phone-width more often than not.
+
+**Which treatment a site gets:**
+
+- **A site with its own mobile design** (RFD, Weibo's mobile site) keeps
+  it. It's cleaned, not redesigned: the rules below on card gaps, ads and
+  flat design, and its menu moved out of Voyager's sidebar's way when it
+  sits on the left (X).
+- **A site that's over-complicated and not designed for mobile** (V2EX:
+  no viewport, a fixed two-column desktop page) gets the typical mobile
+  style, as conservatively as it allows:
+  - Fit the width: lift the page's minimum widths (often on `body` or a
+    `.content` wrapper); nothing scrolls sideways.
+  - The river in one column across the entire width, edge to edge with
+    no page padding left or right; sidebars below it.
+  - Important buttons in a bar at the top or the bottom: a compact top
+    bar (logo, search that shrinks, the few key links), or the site's
+    menu as a bottom bar.
+  - Tabs wrap (or scroll, when wrapping would take several lines).
+  - Readable text, 15–16px for the river's titles and body; small, quiet
+    details.
+  - The things people tap most comfortably large.
+  - Pictures, video and embeds no wider than the column; code and wide
+    tables scroll inside themselves; long links wrap.
+  - Nothing that only works on hover.
+
+  `Sites/v2ex.com.js` is the example.
+
+**At least the main page and the details page.** Every site's restyle
+covers its main list (the feed, the topics, the deals) and its details
+page (a post, a topic, a deal's thread); check its other pages too, and
+fix what's broken there when it's cheap.
+
+**Tight card gaps.** Between cards in a list, a hairline or a few pixels,
+not a band of background.
+
+**Ads can go.** Hiding ad slots, sponsored entries mixed into a list, and
+promotional pop-ups is fine; the site's own content and controls stay.
+Pop-ups that live in their own shadow DOM can't be hidden with page CSS;
+remove their host element instead (`Sites/redflagdeals.com.js`).
+
+**Conservative, as the general rule: safe over clever.** Change as little
+as gets the result. A site changes its page without warning, so a
+restyle should survive it. Adjust sizes, colours, spacing and order on the
+site's own structure rather than rebuilding it; use the fewest rules that
+do the job, broad and stable selectors, CSS before JavaScript. When the
+site changes, the worst case should be the site looking like itself
+again, never broken. If a style needs fragile tricks, drop that part.
+
+**Flat, simple, clean.** No drop shadows, gradients, textures or glossy
+buttons; plain surfaces, hairline separators, the site's own colours. Take
+a site's decoration away rather than add any.
+
+**Moving a site's menu.** Case by case. Start from what people use a site
+for (X's timeline, an article's text, a video and its comments), then ask
+what crowds it, and pick the pattern that fits that site. Most often it's the bottom bar; when
 a site calls for something else (a menu already at the top, a right column
 that matters more than the left one), do that instead and say why in the
 script's comment.
@@ -114,10 +170,10 @@ script's comment.
      This limit is for a horizontal bottom bar only; a menu kept as a
      column (left, right) keeps all its items.
    - Items spaced equally across the bar's whole width, icons centred in
-     44px slots. The content
-   gets `padding-bottom` to match so nothing hides under it. Many sites
-   already have this bar in their phone layout (X does under 500px wide);
-   copy its look rather than inventing one.
+     44px slots.
+   - The content gets `padding-bottom` to match, so nothing hides under
+     it. Where a site has this bar in its own phone layout, copy its look
+     rather than inventing one.
 2. **Hidden, reveal at the bottom.** As 1, but the bar sits off-screen and
    slides up (`transform`, 0.2s ease) when the pointer reaches the bottom
    8px; it slides away when the pointer leaves it.
@@ -131,9 +187,10 @@ Common to all:
 
 - **Full width for the content.** With the menu gone, the main column uses
   the room.
-- **Nothing lost by accident.** Every item stays reachable — in the bar,
-  behind More, or elsewhere on the page — unless the site's script comment says it's
-  dropped and why (X's Post, which the timeline's composer already does).
+- **Nothing lost by accident.** Every menu item stays reachable — in the
+  bar, behind More, or elsewhere on the page — unless the site's script
+  comment says it's dropped and why (X's Post, which the timeline's
+  composer already does). Ads are the exception (above).
 - **Never steal the page's input.** Reveal zones are thin and only react to
   pointer position; no click or key the site uses is taken. A shortcut, if
   any, needs a modifier.
@@ -153,7 +210,8 @@ Common to all:
   select.
 - **Single-page apps.** X, YouTube re-render without reloading; CSS keeps
   applying. If JS must find elements, one `MutationObserver` on the body,
-  throttled to a frame.
+  batched with a zero-delay timeout (not a frame: frames never come in a
+  hidden panel).
 - **Comments say why**, as the media scripts do: what the site does that the
   rule works around.
 
