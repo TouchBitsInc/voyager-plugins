@@ -69,7 +69,7 @@ struct PluginManifest: Codable, Equatable {
         /// `media.click`: a plain click on a page's media, taken from the
         /// page by the site's script.
         var kind: String
-        /// `video`; `image` to come.
+        /// `video`, `image`.
         var media: [String]
         var sites: [Site]
     }
@@ -101,6 +101,10 @@ struct PluginRequest: Codable {
     /// A page with the media on it, or the media's own file.
     var page: String?
     var file: String?
+    /// Photos shown together, the one clicked at `index`. Absent from
+    /// either side's older builds.
+    var images: [Image]?
+    var index: Int?
     var referrer: String?
     var time: Double
     /// The media's size, as the page knew it; zero when it didn't.
@@ -112,6 +116,13 @@ struct PluginRequest: Codable {
     /// The app that sent it, to give focus back to when the plugin hands
     /// the request back.
     var requester: String?
+
+    struct Image: Codable {
+        /// The photo in full.
+        var url: String
+        /// The page's copy, to show while that loads.
+        var preview: String?
+    }
 
     struct Frame: Codable {
         var x, y, width, height: Double
