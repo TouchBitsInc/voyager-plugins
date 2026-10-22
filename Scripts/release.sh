@@ -17,6 +17,8 @@
 #   NOTARY_KEY=<AuthKey.p8> NOTARY_KEY_ID=<id> NOTARY_ISSUER=<uuid> …/release.sh
 #
 # Other settings:
+#   VERSION    the version to build, e.g. 0.2.1, over MediaPlugin.xcconfig's
+#   BUILD      and its build number — as the release workflow sets them
 #   IDENTITY   the signing identity; the team's Developer ID Application
 #              certificate in the keychain unless named
 #   NOTARIZE=0 everything but notarizing and stapling — to try the build
@@ -76,6 +78,8 @@ xcodebuild archive \
   DEVELOPMENT_TEAM=$TEAM \
   PROVISIONING_PROFILE_SPECIFIER= \
   OTHER_CODE_SIGN_FLAGS="--timestamp" \
+  ${VERSION:+MARKETING_VERSION="$VERSION"} \
+  ${BUILD:+CURRENT_PROJECT_VERSION="$BUILD"} \
   | grep -E "error:|warning: .*(sign|entitlement)|\*\* ARCHIVE" || true
 app="$build/MediaPlugin.xcarchive/Products/Applications/Voyager Media Plugin.app"
 [[ -d "$app" ]] || { echo "error: the archive has no app — see the build log above" >&2; exit 1; }

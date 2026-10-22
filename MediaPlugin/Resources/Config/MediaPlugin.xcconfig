@@ -26,9 +26,12 @@ INFOPLIST_KEY_LSApplicationCategoryType = public.app-category.utilities
 // No Dock icon or menu bar: Voyager starts it, and its windows are all
 // that show.
 INFOPLIST_KEY_LSUIElement = YES
-MARKETING_VERSION = 0.1
-// Sparkle tells versions apart by this: one more for every release.
-CURRENT_PROJECT_VERSION = 1
+// The base version. Each merge to main that changes the plugin releases it
+// — this version if it's new, else its next patch (0.2.1, 0.2.2…) — through
+// .github/workflows/media-plugin-release.yml, which also sets the build
+// number Sparkle orders updates by (major·1000000 + minor·1000 + patch).
+MARKETING_VERSION = 0.2
+CURRENT_PROJECT_VERSION = 2000
 
 // MARK: - Identity
 
