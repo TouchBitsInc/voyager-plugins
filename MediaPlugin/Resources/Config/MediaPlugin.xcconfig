@@ -57,4 +57,4 @@ ENABLE_USER_SCRIPT_SANDBOXING = NO
 // with Sparkle's `generate_keys` on the Mac that makes releases — signs
 // each one there. Without a public key, no update is installed.
 SPARKLE_FEED_URL = https:/$()/github.com/TouchBitsInc/voyager-media-plugin/releases/latest/download/appcast.xml
-SPARKLE_PUBLIC_KEY =
+SPARKLE_PUBLIC_KEY = w1Z3hGspHr4W6UNG6bXJuJFBarTCKh4+NaPK4SYREcg=
