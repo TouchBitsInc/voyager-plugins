@@ -26,7 +26,7 @@ INFOPLIST_KEY_LSApplicationCategoryType = public.app-category.utilities
 // No Dock icon or menu bar: Voyager starts it, and its windows are all
 // that show.
 INFOPLIST_KEY_LSUIElement = YES
-MARKETING_VERSION = 1.0
+MARKETING_VERSION = 0.1
 // Sparkle tells versions apart by this: one more for every release.
 CURRENT_PROJECT_VERSION = 1
 
