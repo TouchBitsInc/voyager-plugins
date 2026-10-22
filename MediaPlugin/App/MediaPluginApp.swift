@@ -53,6 +53,8 @@ final class MediaPluginApp: NSObject, NSApplicationDelegate {
                 if let id { trigger(id) }
             case "settings":
                 showSettings()
+            case "front":
+                bringWindowsForward()
             default:
                 quitIfIdle()
             }
@@ -137,6 +139,18 @@ final class MediaPluginApp: NSObject, NSApplicationDelegate {
             userInfo: nil,
             deliverImmediately: true
         )
+    }
+
+    /// Every window in front, as they were stacked, the top one key —
+    /// Voyager's Dock icon clicked with Voyager in front already. With none
+    /// up by now, Voyager keeps focus: a plugin in front with nothing to
+    /// show would leave typing nowhere.
+    private func bringWindowsForward() {
+        let windows = NSApp.orderedWindows.filter(\.isVisible)
+        guard !windows.isEmpty else { return quitIfIdle() }
+        for window in windows.reversed() { window.orderFrontRegardless() }
+        windows.first?.makeKey()
+        NSApp.activate()
     }
 
     // MARK: - Settings

@@ -20,8 +20,10 @@ import AVKit
 ///
 /// Closing is Maipo's too: Esc — its "exit gesture" — shrinks the window to
 /// 80% about its centre as it fades, over 0.15 s, then closes it; the close
-/// button and ⌘W close it at once. A double-click on the video goes full
-/// screen and back, as in QuickTime Player.
+/// button and ⌘W close it at once. A double-click on the video closes it
+/// the same way, and a click plays or pauses — Maipo's
+/// `MPOMediaBrowserItemContentView_Video` — but not the click that only
+/// brings the window forward. Full screen is the green button and ⌃⌘F.
 @MainActor
 final class MediaViewer: NSWindowController, NSWindowDelegate {
     struct Request {
@@ -666,6 +668,18 @@ final class MediaViewer: NSWindowController, NSWindowDelegate {
         return bitsPerSecond >= 1_000_000 ? String(format: "%.1f Mbps", bitsPerSecond / 1_000_000) : "\(Int(bitsPerSecond / 1000)) kbps"
     }
 
+    /// Maipo's `play:`: paused if playing, playing if not — from the start
+    /// again once it's played to its end, as the player's own button does.
+    fileprivate func togglePlayback() {
+        guard let player else { return }
+        if player.rate > 0 { return player.pause() }
+        if let item = player.currentItem, item.duration.isNumeric,
+           item.duration.seconds - player.currentTime().seconds < 0.1 {
+            player.seek(to: .zero)
+        }
+        player.play()
+    }
+
     // MARK: - Closing
 
     /// Maipo's `fadeOutThenClose`: to 80% about the centre, and transparent,
@@ -750,15 +764,44 @@ private final class ViewerWindow: NSWindow {
         return true
     }
 
-    /// A double-click on the video goes full screen, or back — not on the
-    /// player's controls along the bottom, where it's theirs.
+    /// Where the press on the video now went down, while it's a click on
+    /// it — not one that only brought the window forward, nor one on the
+    /// player's controls, nor a drag.
+    private var pressedAt: NSPoint?
+    /// Whether the clicks running now began with one on the video, in a
+    /// window already in front: a double-click that only began by bringing
+    /// it forward doesn't close it.
+    private var clicksCount = false
+
+    /// On the video, Maipo's: a click plays or pauses as it's let go; a
+    /// double-click closes the window, as Esc does — or, in full screen,
+    /// leaves it, as Esc does there.
     override func sendEvent(_ event: NSEvent) {
         if showsContextMenu(event) { return }
-        // Not while another player is full screen: this one can't be.
-        if event.type == .leftMouseDown, event.clickCount == 2, onVideo(event.locationInWindow),
-           !collectionBehavior.contains(.fullScreenNone) {
-            toggleFullScreen(nil)
-            return
+        switch event.type {
+        case .leftMouseDown where onVideo(event.locationInWindow):
+            if event.clickCount == 1 { clicksCount = isKeyWindow && NSApp.isActive }
+            pressedAt = event.clickCount == 1 && clicksCount ? event.locationInWindow : nil
+            if event.clickCount == 2, clicksCount {
+                if styleMask.contains(.fullScreen) {
+                    toggleFullScreen(nil)
+                } else {
+                    (windowController as? MediaViewer)?.fadeOutThenClose()
+                }
+                return
+            }
+        case .leftMouseDragged:
+            if let pressedAt, hypot(event.locationInWindow.x - pressedAt.x, event.locationInWindow.y - pressedAt.y) > 4 {
+                self.pressedAt = nil
+            }
+        case .leftMouseUp where pressedAt != nil:
+            pressedAt = nil
+            if onVideo(event.locationInWindow) { (windowController as? MediaViewer)?.togglePlayback() }
+        case .leftMouseDown:
+            pressedAt = nil
+            clicksCount = false
+        default:
+            break
         }
         super.sendEvent(event)
     }
