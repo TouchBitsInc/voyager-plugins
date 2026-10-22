@@ -29,6 +29,11 @@ signed carrier of `Resources/manifest.json` and `Resources/Sites/*.js`, its
 trigger kind `page.restyle`. Unlike `media.click` there's no request to the
 app. With the plugin off in Settings, sites will be as they ship.
 
+Its icon is `Design/icon.svg` (a page whose menu has moved into a bottom
+bar: flat, the macOS 824pt tile on a 1024 canvas), rendered into
+`RestylePlugin/Resources/Assets.xcassets/AppIcon.appiconset` for the app.
+Edit the SVG and re-render every size; never edit the PNGs.
+
 ## One file per site
 
 A site's script is `Resources/Sites/<domain>.js`, named after its domain:

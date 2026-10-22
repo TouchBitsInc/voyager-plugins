@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Restyle Plugin icon: a page rearranged — its content in one column,
+       its menu moved down into a bottom bar. macOS grid: 824pt tile, 100pt
+       margin. Flat, no gradients or shadows. -->
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="#2F6BFF"/>
+  <!-- The page, its bottom bar a tint of its own -->
+  <rect x="236" y="214" width="552" height="596" rx="56" fill="#FFFFFF"/>
+  <path d="M236 676h552v78a56 56 0 0 1-56 56H292a56 56 0 0 1-56-56z" fill="#E6EDFF"/>
+  <!-- Content river: three cards -->
+  <rect x="290" y="270" width="444" height="96" rx="22" fill="#D9E4FF"/>
+  <rect x="290" y="390" width="444" height="96" rx="22" fill="#D9E4FF"/>
+  <rect x="290" y="510" width="290" height="96" rx="22" fill="#D9E4FF"/>
+  <!-- The move: down into the bar -->
+  <path d="M662 522v104" stroke="#2F6BFF" stroke-width="34" stroke-linecap="round"/>
+  <path d="M620 592l42 44 42-44" fill="none" stroke="#2F6BFF" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- The bar's tabs -->
+  <circle cx="330" cy="743" r="24" fill="#2F6BFF"/>
+  <circle cx="447" cy="743" r="24" fill="#A9BFFF"/>
+  <circle cx="564" cy="743" r="24" fill="#A9BFFF"/>
+  <circle cx="681" cy="743" r="24" fill="#A9BFFF"/>
+</svg>
