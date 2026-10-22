@@ -25,7 +25,12 @@
 # Out, in Plugins/MediaPlugin/build/updates:
 #   Voyager-Media-Plugin-<version>.dmg  the download
 #   appcast.xml                         the update feed, signed with the
-#                                       Sparkle key in this Mac's keychain
+#                                       plugin's own Sparkle key in this
+#                                       Mac's keychain — `voyager-media-plugin`,
+#                                       made once with
+#                                       `generate_keys --account voyager-media-plugin`;
+#                                       not Sparkle's default one, which
+#                                       another app's releases may use
 # Both go up as assets of the GitHub release tagged <version>, which the
 # feed URL in MediaPlugin.xcconfig and the appcast's links point at.
 set -euo pipefail
@@ -137,12 +142,12 @@ updates="$build/updates"
 mkdir -p "$updates"
 mv "$build/$name.dmg" "$updates/"
 if [[ -z "$publicKey" ]]; then
-  echo "    skipped: no SPARKLE_PUBLIC_KEY in MediaPlugin.xcconfig — run Sparkle's generate_keys on this Mac once, and put the public key there"
+  echo "    skipped: no SPARKLE_PUBLIC_KEY in MediaPlugin.xcconfig — run Sparkle's \`generate_keys --account voyager-media-plugin\` on this Mac once, and put the public key there"
 else
   # Links to the release's own assets: <repo>/releases/download/<version>/.
   downloads="${feed%/latest/download/*}/download/$version/"
   "$build/SourcePackages/artifacts/sparkle/Sparkle/bin/generate_appcast" \
-    --download-url-prefix "$downloads" "$updates"
+    --account voyager-media-plugin --download-url-prefix "$downloads" "$updates"
   echo "    $updates/appcast.xml"
 fi
 
