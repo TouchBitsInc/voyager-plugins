@@ -776,7 +776,7 @@ private final class ViewerWindow: NSWindow {
 }
 
 /// A notification observer's token, for the observer to remove itself.
-private final class ObserverBox: @unchecked Sendable {
+final class ObserverBox: @unchecked Sendable {
     var token: NSObjectProtocol?
 }
 

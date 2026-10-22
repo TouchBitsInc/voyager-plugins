@@ -1,7 +1,8 @@
 import AppKit
 import Sparkle
 
-/// The Media Plugin: plays and saves the videos Voyager hands it, in windows
+/// The Media Plugin: plays and saves the videos Voyager hands it — and shows
+/// its photos, a post's together — in windows
 /// of its own, with yt-dlp — what a sandboxed App Store app can't do. An app
 /// without a Dock icon, started by Voyager when a video is clicked and gone
 /// once nothing's playing or saving. Started any other way — from Finder,
@@ -68,6 +69,22 @@ final class MediaPluginApp: NSObject, NSApplicationDelegate {
         // Read once: it has the site's cookies in it.
         try? FileManager.default.removeItem(at: file)
 
+        let frame = request.frame.map { CGRect(x: $0.x, y: $0.y, width: $0.width, height: $0.height) } ?? .zero
+        // Photos: shown together, from the one clicked.
+        if let images = request.images, !images.isEmpty {
+            post(.accepted, request: requestID)
+            quitting?.cancel()
+            ImageViewer.show(
+                ImageViewer.Request(images: images, index: request.index ?? 0, referrer: request.referrer.flatMap(URL.init(string:))),
+                sourceFrame: frame,
+                onClose: { [weak self] in
+                    self?.post(.closed, request: requestID)
+                    self?.quitIfIdle()
+                }
+            )
+            return
+        }
+
         let video: MediaSites.Video
         if let page = request.page.flatMap(URL.init(string:)) {
             video = .page(page)
@@ -85,7 +102,6 @@ final class MediaPluginApp: NSObject, NSApplicationDelegate {
 
         post(.accepted, request: requestID)
         quitting?.cancel()
-        let frame = request.frame.map { CGRect(x: $0.x, y: $0.y, width: $0.width, height: $0.height) } ?? .zero
         MediaViewer.show(
             MediaViewer.Request(
                 video: video,
@@ -146,7 +162,7 @@ final class MediaPluginApp: NSObject, NSApplicationDelegate {
         quitting = Task { [weak self] in
             try? await Task.sleep(for: .seconds(30))
             guard let self, !Task.isCancelled,
-                  !MediaViewer.isShowing, !Downloads.shared.isBusy, self.settings?.isVisible != true
+                  !MediaViewer.isShowing, !ImageViewer.isShowing, !Downloads.shared.isBusy, self.settings?.isVisible != true
             else { return }
             NSApp.terminate(nil)
         }

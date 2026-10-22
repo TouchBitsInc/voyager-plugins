@@ -10,13 +10,50 @@
 // several. A quoted tweet is drawn inside the one quoting it, and its
 // timestamp isn't a link: its video is looked up by the quoting tweet,
 // whose videos to yt-dlp are its own and then its quoted tweet's.
+//
+// A photo is shown with the others posted with it: its tweet's, or its
+// quoted tweet's — each photo's link names the tweet it's in and its
+// place there — in full, X's `name=orig`, with the page's copy to show
+// while that loads.
 ({
   find(stack, x, y) {
-    const media = this.mediaIn(this.tweetOf(stack[0])).find((el) => {
+    const tweet = this.tweetOf(stack[0]);
+    const under = (el) => {
       const r = el.getBoundingClientRect();
       return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
-    });
-    return media ? this.videoOf(media) : null;
+    };
+    const media = this.mediaIn(tweet).find(under);
+    if (media) return this.videoOf(media);
+    const photo = this.photosIn(tweet).find((p) => under(p.link));
+    return photo ? this.photosOf(tweet, photo) : null;
+  },
+
+  // A tweet's photos: each one's link, the tweet it names, its place
+  // there, and its picture.
+  photosIn(article) {
+    if (!article) return [];
+    return [...article.querySelectorAll('a[href*="/photo/"]')].map((link) => {
+      const [, status, n] = link.href.match(/\/status\/(\d+)\/photo\/(\d+)/) || [];
+      const img = link.querySelector('img[src*="pbs.twimg.com/media/"]');
+      return status && img ? { link, status, n: Number(n), img } : null;
+    }).filter(Boolean);
+  },
+
+  // The photo clicked, among the ones posted with it, in their order.
+  photosOf(tweet, photo) {
+    const group = this.photosIn(tweet).filter((p) => p.status === photo.status)
+      .filter((p, i, all) => all.findIndex((q) => q.n === p.n) === i)
+      .sort((a, b) => a.n - b.n);
+    const full = (src) => {
+      const u = new URL(src);
+      u.searchParams.set('name', 'orig');
+      return u.href;
+    };
+    return {
+      element: photo.link,
+      images: group.map((p) => ({ url: full(p.img.src), preview: p.img.currentSrc || p.img.src })),
+      index: group.findIndex((p) => p.n === photo.n),
+    };
   },
 
   // A tweet's videos, in order: each <video>, and each poster of one not

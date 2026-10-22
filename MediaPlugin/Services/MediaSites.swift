@@ -10,10 +10,14 @@ import Foundation
 /// and returns the video's `element` — a `<video>`, or a player or link
 /// standing for one — with its `page` for yt-dlp, or a `file` that plays as
 /// it is; or null — and the `video` whose time is the video's, when that
-/// isn't the `<video>` in the element (null for none). An optional
-/// `seek(time, page)` moves the site's player when a window closes, for a
-/// player that ignores its video's time being set; it runs in the page's own
-/// world. `web(url)`, `videoIn(el)` and `big(el)` are in scope.
+/// isn't the `<video>` in the element (null for none) — and the `time` to
+/// start from, when no `<video>` says. For a photo, the
+/// element comes with `images` — each `{ url, preview }`, the photo in full
+/// and the page's copy — shown together, and the `index` of the one clicked.
+/// An optional `seek(time, page)` runs in the page's own world when a
+/// window closes: it moves the site's player, for one that ignores its
+/// video's time being set, and keeps anything else the site keeps of a
+/// watch. `web(url)`, `videoIn(el)` and `big(el)` are in scope.
 enum MediaSites {
     typealias Site = PluginManifest.Site
 
