@@ -14,13 +14,16 @@ first answer, not a rule.
 
 ## How it fits Voyager
 
-**Today:** Debug builds only. `Voyager/Scenes/Browser/PageRestyle.swift`
-reads the scripts straight from this folder, named by `-RestyleDir` (see
-Trying one); there's no plugin app yet, and Settings' plugin toggle doesn't
-affect restyles. Each site's script goes into its pages at document start,
-main frame only, in the default content world — next to the muter and
-media clicks in `BrowserViewModel.installUserScripts()` — and the ⋯ menu's
-Styles lists the page's styles.
+**Today:** Debug builds only. The plugin's `Sites` folder is a resource of
+Voyager's Debug builds (excluded from Release in `Voyager.xcconfig`), so
+every Debug build, a plain Run in Xcode included, carries this checkout's
+scripts, and `Voyager/Scenes/Browser/PageRestyle.swift` loads them. There's
+no plugin app yet, and Settings' plugin toggle doesn't affect restyles;
+`-RestyleOff YES` at launch turns them all off. Each site's script goes
+into its pages at document start, main frame only, in the default content
+world — next to the muter and media clicks in
+`BrowserViewModel.installUserScripts()` — and the ⋯ menu's Styles lists
+the page's styles.
 
 **Planned:** a plugin like the Media Plugin (`../MediaPlugin`), and for the
 same reason: its scripts go into pages, so it ships as a team-signed app in
@@ -222,18 +225,26 @@ Common to all:
 
 ## Trying one
 
-On the real site, in a Debug build of Voyager
-(`Voyager/Scenes/Browser/PageRestyle.swift`). Launch it unsigned, which
-leaves it outside the sandbox, with the plugin's source folder:
+On the real site, in a Debug build of Voyager. Every Debug build carries
+this checkout's `Sites` folder (Xcode copies it again when a script
+changes), so an edit shows after a rebuild and relaunch; Release builds
+don't carry it, and will take the scripts from the plugin app.
+
+To try edits without rebuilding, launch an unsigned Debug build (outside
+the sandbox, which can't read a checkout) with the plugin's `Resources`
+folder; scripts are then read from it whenever a browser view sets up its
+page scripts, so a relaunch is enough:
 
 ```sh
 open -n <Debug>/Voyager.app --args -RestyleDir "$PWD/Plugins/RestylePlugin/RestylePlugin/Resources"
 ```
 
+If that folder can't be read, the app's own scripts are used and the log
+says so. `-RestyleOff YES` turns every restyle off, to see sites as they
+ship.
+
 The ⋯ menu's Styles switches between the site's styles live. The choice is
-kept in the site's own storage. Scripts are read whenever a browser view
-sets up its page scripts (at launch, and again on some changes), so
-relaunch after editing one to be sure every view has it.
+kept in the site's own storage.
 
 Check each variant at three window widths (narrow panel, half screen, full),
 in light and dark, and that the menu's every item still works.
