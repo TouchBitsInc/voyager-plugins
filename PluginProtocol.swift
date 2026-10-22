@@ -59,8 +59,7 @@ struct PluginManifest: Codable, Equatable {
     var id: String
     var name: String
     var protocolVersion: Int
-    /// The plugin's version, filled in by the plugin in the copy it keeps
-    /// in the shared folder.
+    /// The plugin's version, as Voyager reads it from the app.
     var version: String?
     /// Its URL scheme: `<scheme>://trigger?id=…`, `<scheme>://settings`.
     var scheme: String
