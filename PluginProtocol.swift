@@ -6,10 +6,9 @@ import Foundation
 /// the plugins installed, puts their site scripts in the pages they're for,
 /// and hands them what those scripts catch.
 ///
-/// - Voyager finds a plugin by its bundle ID, and reads its manifest and
-///   site scripts from the app — or, where the sandbox can't read the app
-///   (in ~/Applications), from the copy the plugin keeps in the shared
-///   folder, the App Group's.
+/// - Voyager finds a plugin by its bundle ID, in /Applications, checks
+///   it's signed by TouchBits' team, and reads its manifest and site
+///   scripts from the app.
 /// - A trigger — a click a site script took — goes to the plugin as a
 ///   request file in the shared folder, with the site's cookies, and the
 ///   plugin's URL naming it.
@@ -18,6 +17,8 @@ import Foundation
 ///   dictionary wouldn't).
 enum PluginProtocol {
     static let version = 1
+    /// The team plugins are signed by.
+    static let team = "8Z3UH5979Z"
     /// The folder both sides share. Team-prefixed: a sandboxed app may use
     /// it without a provisioning profile.
     static let appGroup = "8Z3UH5979Z.com.touchbits.voyager"
@@ -36,11 +37,6 @@ enum PluginProtocol {
 
     static var sharedFolder: URL? {
         FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroup)
-    }
-
-    /// Where a plugin keeps a copy of its manifest and scripts, for Voyager.
-    static func pluginFolder(_ id: String) -> URL? {
-        sharedFolder?.appending(path: "Plugins/\(id)")
     }
 
     /// Where a request waits for its plugin. Its ID is a UUID — anything
@@ -139,7 +135,7 @@ struct PluginEvent: Codable {
         case unhandled
         /// Done with — a player closed — at `time`.
         case closed
-        /// The plugin started and put its manifest in the shared folder.
+        /// The plugin started — perhaps a new version: Voyager looks again.
         case ready
     }
 
