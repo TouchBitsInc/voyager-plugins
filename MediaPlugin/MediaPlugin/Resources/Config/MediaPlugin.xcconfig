@@ -1,0 +1,63 @@
+// Every target-level build setting for the Media Plugin lives here, as
+// Voyager's do in Voyager.xcconfig.
+//
+// The plugin is everything Voyager can't be in the App Store: not
+// sandboxed, it runs yt-dlp, and plays and saves the videos Voyager hands
+// it. Signed with Developer ID and notarized, it's downloaded on its own.
+
+// MARK: - Platform
+
+MACOSX_DEPLOYMENT_TARGET = 14.0
+SWIFT_VERSION = 6.0
+// Apple silicon only, as Voyager: it's what plays YouTube's VP9 past
+// 1080p, and AV1.
+ARCHS = arm64
+SWIFT_EMIT_LOC_STRINGS = YES
+ALWAYS_SEARCH_USER_PATHS = NO
+
+// MARK: - Product
+
+PRODUCT_NAME = Voyager Media Plugin
+GENERATE_INFOPLIST_FILE = YES
+// Merged with the generated one: the URL scheme Voyager opens it by.
+INFOPLIST_FILE = MediaPlugin/Resources/Config/Info.plist
+INFOPLIST_KEY_CFBundleDisplayName = Media Plugin
+INFOPLIST_KEY_LSApplicationCategoryType = public.app-category.utilities
+// No Dock icon or menu bar: Voyager starts it, and its windows are all
+// that show.
+INFOPLIST_KEY_LSUIElement = YES
+// The base version. Each merge to main that changes the plugin releases it
+// — this version if it's new, else its next patch (0.2.1, 0.2.2…) — through
+// .github/workflows/media-plugin-release.yml, which also sets the build
+// number Sparkle orders updates by (major·1000000 + minor·1000 + patch).
+MARKETING_VERSION = 0.2
+CURRENT_PROJECT_VERSION = 2000
+
+// MARK: - Identity
+
+PRODUCT_BUNDLE_IDENTIFIER = com.touchbits.voyager.media-plugin
+CODE_SIGN_ENTITLEMENTS = MediaPlugin/Resources/Config/MediaPlugin.entitlements
+CODE_SIGN_STYLE = Automatic
+// Notarization needs the hardened runtime; the sandbox is what it's
+// without.
+ENABLE_HARDENED_RUNTIME = YES
+ENABLE_APP_SANDBOX = NO
+
+SWIFT_ACTIVE_COMPILATION_CONDITIONS[config=Debug] = DEBUG
+LD_RUNPATH_SEARCH_PATHS = $(inherited) @executable_path/../Frameworks
+PRODUCT_MODULE_NAME = MediaPlugin
+
+// MARK: - Tools
+
+// The Bundle Tools phase downloads the pinned tools into a cache in the
+// source folder, which a sandboxed script can't.
+ENABLE_USER_SCRIPT_SANDBOXING = NO
+
+// MARK: - Updates
+
+// Sparkle's appcast: the plugin's releases, newest first. Its downloads
+// are checked against SPARKLE_PUBLIC_KEY, whose private half — made once
+// with Sparkle's `generate_keys` on the Mac that makes releases — signs
+// each one there. Without a public key, no update is installed.
+SPARKLE_FEED_URL = https:/$()/github.com/TouchBitsInc/voyager-media-plugin/releases/latest/download/appcast.xml
+SPARKLE_PUBLIC_KEY = w1Z3hGspHr4W6UNG6bXJuJFBarTCKh4+NaPK4SYREcg=

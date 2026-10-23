@@ -1,0 +1,17 @@
+{
+  "id": "com.touchbits.voyager.media-plugin",
+  "name": "Media Plugin",
+  "protocolVersion": 1,
+  "scheme": "voyager-media-plugin",
+  "triggers": [
+    {
+      "kind": "media.click",
+      "media": ["video", "image"],
+      "sites": [
+        { "name": "x", "hosts": ["x.com", "twitter.com"], "script": "media-site-x.js", "cookies": true },
+        { "name": "youtube", "hosts": ["youtube.com"], "script": "media-site-youtube.js", "cookies": false },
+        { "name": "weibo", "hosts": ["weibo.cn", "weibo.com"], "script": "media-site-weibo.js", "cookies": true }
+      ]
+    }
+  ]
+}

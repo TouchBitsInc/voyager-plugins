@@ -1,0 +1,8 @@
+{
+  "yt-dlp": {
+    "version": "2026.08.19",
+    "url": "https://github.com/yt-dlp/yt-dlp/releases/download/2026.08.19/yt-dlp_macos.zip",
+    "sha256": "07e54b0865303c864006925913bce2604f8ee8cc6f18699bac9c309f9328a6d8",
+    "executable": "yt-dlp_macos"
+  }
+}
