@@ -1,0 +1,9 @@
+{
+  "id": "com.touchbits.voyager.restyle-plugin",
+  "name": "Restyle Plugin",
+  "protocolVersion": 1,
+  "scheme": "voyager-restyle-plugin",
+  "triggers": [
+    { "kind": "page.restyle" }
+  ]
+}
