@@ -4,7 +4,7 @@
 # app is — every program and library in it, as notarization wants. A new
 # tool version is a new plugin version: change tools.json, and ship.
 #
-# Downloads are kept in Plugins/MediaPlugin/.tools (not in git), so a
+# Downloads are kept in MediaPlugin/.tools (not in git), so a
 # build after the first needs no network.
 set -euo pipefail
 

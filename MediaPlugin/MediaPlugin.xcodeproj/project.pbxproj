@@ -40,7 +40,7 @@
 		5700000000000000000C0002 /* Shared */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			name = Shared;
-			path = ../../Shared;
+			path = ../Shared;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */

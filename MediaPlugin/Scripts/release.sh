@@ -9,7 +9,7 @@
 #
 # Run it on the Mac that holds the Developer ID key (the CI Mac mini):
 #
-#   NOTARY_PROFILE=<keychain profile> Plugins/MediaPlugin/Scripts/release.sh
+#   NOTARY_PROFILE=<keychain profile> MediaPlugin/Scripts/release.sh
 #
 # The profile is made once with `xcrun notarytool store-credentials`.
 # Or, with an App Store Connect API key instead:
@@ -24,7 +24,7 @@
 #   NOTARIZE=0 everything but notarizing and stapling — to try the build
 #              anywhere, with any identity
 #
-# Out, in Plugins/MediaPlugin/build/updates:
+# Out, in MediaPlugin/build/updates:
 #   Voyager-Media-Plugin-<version>.dmg  the download
 #   appcast.xml                         the update feed, signed with the
 #                                       plugin's own Sparkle key in this

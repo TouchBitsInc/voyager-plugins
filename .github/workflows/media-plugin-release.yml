@@ -1,0 +1,207 @@
+name: Media Plugin release
+run-name: Media Plugin release ${{ inputs.version || 'from main' }}
+
+# Every merge to main that changes the Media Plugin releases it: built on the
+# release Mac mini, signed with the Developer ID identity in that Mac's
+# keychain, notarized, its Sparkle update signed, and published as a release
+# of this repo, TouchBitsInc/voyager-plugins — whose latest release's appcast
+# installed Media Plugins check, and update from by themselves. They ask for
+# it at the old name, voyager-media-plugin, which GitHub redirects here: no
+# repo may ever take that name again. And the Media Plugin's release must
+# stay the repo's latest: any other plugin's release is published with
+# `--latest=false`, or installed Media Plugins would read its feed.
+#
+# The version is MARKETING_VERSION in MediaPlugin.xcconfig if it hasn't been
+# released yet, else its next patch: 0.2, then 0.2.1, 0.2.2… Raise the base
+# in the xcconfig to start a new minor. Run it by hand to release a given
+# version. Every release is newer than all before it — the feed always
+# offers the newest — and none is ever replaced: a fix is the next version.
+# Only main releases, through the `release` environment, which only main
+# may deploy to.
+#
+# Shares its ways with TouchBitsInc/cascade-release's: the same runner, App
+# Store Connect key and checks.
+
+on:
+  push:
+    branches: [main]
+    # The plugin's own code; a change to this workflow alone releases
+    # nothing.
+    paths:
+      - MediaPlugin/**
+      - Shared/**
+  workflow_dispatch:
+    inputs:
+      version:
+        description: New version to release, newer than any so far (e.g. 0.3). Empty takes the next one, as a merge does
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    # Self-hosted runners default to `bash -e` without pipefail.
+    shell: bash --noprofile --norc -eo pipefail {0}
+
+concurrency:
+  group: media-plugin-release
+  cancel-in-progress: false
+
+env:
+  PUBLIC_REPO: TouchBitsInc/voyager-plugins
+  SPARKLE_ACCOUNT: voyager-media-plugin
+  # The team's App Store Connect key, already on the release Mac.
+  API_KEY_ID: XF6Z7Z34B5
+  API_ISSUER_ID: 7d02f114-923c-49f1-9b55-4b9b937c1a89
+  CONFIG: MediaPlugin/MediaPlugin/Resources/Config/MediaPlugin.xcconfig
+
+jobs:
+  release:
+    # A run started by hand from another branch releases nothing.
+    if: github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, macOS, ARM64]
+    environment: release
+    timeout-minutes: 90
+    steps:
+      - name: Check out
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          clean: true
+
+      - name: Check the release Mac
+        env:
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+          # Given only to the steps that run gh, never to the build: unset,
+          # gh uses this Mac's own login.
+          GH_TOKEN: ${{ secrets.PUBLIC_RELEASE_TOKEN }}
+        run: |
+          fail() { echo "::error::$1"; exit 1; }
+
+          # A runner started as a service may find the login keychain locked.
+          if [ -n "$KEYCHAIN_PASSWORD" ]; then
+            security unlock-keychain -p "$KEYCHAIN_PASSWORD" login.keychain-db
+          fi
+          identity=$(security find-identity -v -p codesigning \
+            | sed -n 's/.*"\(Developer ID Application: .*(8Z3UH5979Z)\)"/\1/p' | head -1)
+          [ -n "$identity" ] || fail "No valid Developer ID Application identity for 8Z3UH5979Z in $(id -un)'s keychain"
+          echo "IDENTITY=$identity" >> "$GITHUB_ENV"
+
+          # Sign a throwaway binary under a time limit: a key codesign may not use opens a
+          # keychain dialog nobody answers on this Mac, and the job would wait out its timeout.
+          probe="$RUNNER_TEMP/codesign-probe"
+          cp /usr/bin/true "$probe"
+          code=0
+          perl -e 'alarm shift; exec @ARGV' 60 codesign --force --sign "$identity" --timestamp "$probe" || code=$?
+          rm -f "$probe"
+          [ "$code" -ne 142 ] || fail "codesign got no access to the Developer ID key within 60s — likely a keychain dialog on this Mac; as $(id -un), run codesign once in Terminal and choose Always Allow"
+          [ "$code" -eq 0 ] || fail "codesign cannot sign with $identity (exit $code)"
+
+          # Notarization uses the API key file directly, never a keychain profile.
+          api_key="$HOME/.appstoreconnect/private_keys/AuthKey_$API_KEY_ID.p8"
+          [ -f "$api_key" ] || fail "No App Store Connect API key at $api_key"
+          echo "NOTARY_KEY=$api_key" >> "$GITHUB_ENV"
+          echo "NOTARY_KEY_ID=$API_KEY_ID" >> "$GITHUB_ENV"
+          echo "NOTARY_ISSUER=$API_ISSUER_ID" >> "$GITHUB_ENV"
+          xcrun notarytool history --key "$api_key" --key-id "$API_KEY_ID" --issuer "$API_ISSUER_ID" >/dev/null \
+            || fail "notarytool cannot reach Apple with API key $API_KEY_ID"
+
+          # Publishing needs push access to the public repo: the token secret if set, else this Mac's gh login.
+          [ -n "$GH_TOKEN" ] || unset GH_TOKEN
+          [ "$(gh api "repos/$PUBLIC_REPO" --jq .permissions.push)" = "true" ] \
+            || fail "gh cannot publish to $PUBLIC_REPO; set PUBLIC_RELEASE_TOKEN or gh auth login on this Mac"
+
+      - name: Choose the version
+        id: version
+        env:
+          REQUESTED: ${{ inputs.version }}
+          GH_TOKEN: ${{ secrets.PUBLIC_RELEASE_TOKEN }}
+        run: |
+          fail() { echo "::error::$1"; exit 1; }
+          [ -n "$GH_TOKEN" ] || unset GH_TOKEN
+          base=$(sed -n 's/^MARKETING_VERSION *= *\([0-9.]*\).*/\1/p' "$CONFIG")
+          [[ "$base" =~ ^(0|[1-9][0-9]{0,2})\.(0|[1-9][0-9]{0,2})$ ]] || fail "MARKETING_VERSION in $CONFIG must look like 0.2, not '$base'"
+          # Drafts too: a run that failed after creating one has used its version.
+          released=$(gh release list -R "$PUBLIC_REPO" --limit 200 --json tagName --jq '.[].tagName')
+          newest=$(grep -E '^[0-9]+\.[0-9]+(\.[0-9]+)?$' <<< "$released" | sort -V | tail -1 || true)
+          if [ -n "$REQUESTED" ]; then
+            version="$REQUESTED"
+          elif ! grep -qx "$base" <<< "$released"; then
+            version="$base"
+          else
+            last=$(grep -E "^${base//./\\.}\.[0-9]+$" <<< "$released" | sort -V | tail -1 || true)
+            version="$base.1"
+            [ -z "$last" ] || version="$base.$(( ${last##*.} + 1 ))"
+          fi
+          # One way to write each version, so the build number below is one-to-one with
+          # it: parts under 1000, no leading zeros, and no .0 patch (0.2.0 is 0.2).
+          [[ "$version" =~ ^(0|[1-9][0-9]{0,2})\.(0|[1-9][0-9]{0,2})(\.([1-9][0-9]{0,2}))?$ ]] \
+            || fail "Version must look like 0.2 or 0.2.1 — parts under 1000, no leading zeros, no .0 patch: $version"
+          build=$(( 10#${BASH_REMATCH[1]} * 1000000 + 10#${BASH_REMATCH[2]} * 1000 + 10#${BASH_REMATCH[4]:-0} ))
+          ! grep -qx "$version" <<< "$released" || fail "$version is already released; a fix ships as the next version"
+          # Newer than everything out there: the feed offers the newest, and an older one
+          # would leave anyone already past it without updates.
+          if [ -n "$newest" ] && [ "$(printf '%s\n' "$newest" "$version" | sort -V | tail -1)" != "$version" ]; then
+            fail "$version is not newer than $newest; raise MARKETING_VERSION in $CONFIG above it"
+          fi
+          echo "::notice::Releasing the Media Plugin $version (build $build) from ${GITHUB_SHA:0:12}"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "build=$build" >> "$GITHUB_OUTPUT"
+
+      - name: Build, sign, notarize and write the appcast
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          BUILD: ${{ steps.version.outputs.build }}
+        run: |
+          MediaPlugin/Scripts/release.sh
+          updates=MediaPlugin/build/updates
+          dmg="$updates/Voyager-Media-Plugin-$VERSION.dmg"
+          [ -f "$dmg" ] || { echo "::error::No $dmg"; exit 1; }
+          # The update must be signed with the key whose public half installed plugins hold.
+          grep -q 'sparkle:edSignature' "$updates/appcast.xml" \
+            || { echo "::error::The appcast isn't signed: no Sparkle key '$SPARKLE_ACCOUNT' in this keychain, or it doesn't match SPARKLE_PUBLIC_KEY"; exit 1; }
+          grep -q "/releases/download/$VERSION/Voyager-Media-Plugin-$VERSION.dmg" "$updates/appcast.xml"
+          spctl --assess --type open --context context:primary-signature --verbose "$dmg"
+
+      - name: Write the release notes
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          GH_TOKEN: ${{ secrets.PUBLIC_RELEASE_TOKEN }}
+        run: |
+          [ -n "$GH_TOKEN" ] || unset GH_TOKEN
+          notes="$RUNNER_TEMP/notes.md"
+          # The plugin's changes since the release before: its notes name the commit it came from.
+          previous=$(gh release list -R "$PUBLIC_REPO" --limit 1 --json tagName --jq '.[0].tagName' || true)
+          from=""
+          [ -n "$previous" ] && from=$(gh release view "$previous" -R "$PUBLIC_REPO" --json body --jq .body \
+            | sed -n 's/^Source: \([0-9a-f]\{40\}\)$/\1/p' | head -1)
+          {
+            echo "Voyager Media Plugin $VERSION. Notarized by Apple; installed plugins update by themselves."
+            echo
+            if [ -n "$from" ] && git cat-file -e "$from" 2>/dev/null; then
+              git log --no-merges --format='- %s' "$from..$GITHUB_SHA" -- MediaPlugin Shared
+            fi
+            echo
+            echo "Source: $GITHUB_SHA"
+          } > "$notes"
+          cat "$notes"
+          echo "NOTES=$notes" >> "$GITHUB_ENV"
+
+      - name: Publish
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          GH_TOKEN: ${{ secrets.PUBLIC_RELEASE_TOKEN }}
+        run: |
+          [ -n "$GH_TOKEN" ] || unset GH_TOKEN
+          updates=MediaPlugin/build/updates
+          # Created with both files at once — published only once both are up — and
+          # made the latest, whose appcast installed plugins read.
+          gh release create "$VERSION" -R "$PUBLIC_REPO" --latest --title "Voyager Media Plugin $VERSION" --notes-file "$NOTES" \
+            "$updates/Voyager-Media-Plugin-$VERSION.dmg" "$updates/appcast.xml"
+          # What installed plugins will see, fetched as they fetch it: no login.
+          feed="https://github.com/$PUBLIC_REPO/releases/latest/download/appcast.xml"
+          curl -fsSL "$feed" | grep -q "<sparkle:shortVersionString>$VERSION<" \
+            || { echo "::error::The public feed doesn't offer $VERSION"; exit 1; }
+          echo "::notice::Published https://github.com/$PUBLIC_REPO/releases/tag/$VERSION"

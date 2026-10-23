@@ -1,0 +1,4 @@
+*/.tools/
+*/build/
+.DS_Store
+xcuserdata/

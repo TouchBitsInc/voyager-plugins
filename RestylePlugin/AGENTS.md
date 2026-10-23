@@ -5,7 +5,7 @@ chrome out of the way, the content given the room, whatever else a site
 needs to sit well beside Voyager's.
 
 Voyager keeps its sidebar on the left: a column of site icons, 77pt wide
-(`Voyager/Scenes/Sidebar/SidebarViewModel.swift`). Many sites put their own
+(Voyager's `Voyager/Scenes/Sidebar/SidebarViewModel.swift`). Many sites put their own
 menu on the left too — X's nav, YouTube's guide, Weibo's — so a page opens
 with two menus side by side and its content pushed right and squeezed. The
 first restyles rearrange a site around its content. What that takes is
@@ -17,7 +17,8 @@ first answer, not a rule.
 **Today:** Debug builds only. The plugin's `Sites` folder is a resource of
 Voyager's Debug builds (excluded from Release in `Voyager.xcconfig`), so
 every Debug build, a plain Run in Xcode included, carries this checkout's
-scripts, and `Voyager/Scenes/Browser/PageRestyle.swift` loads them. There's
+scripts, and Voyager's `Voyager/Scenes/Browser/PageRestyle.swift` loads
+them. There's
 no plugin app yet, and Settings' plugin toggle doesn't affect restyles;
 `-RestyleOff YES` at launch turns them all off. Each site's script goes
 into its pages at document start, main frame only, in the default content
@@ -27,7 +28,7 @@ the page's styles.
 
 **Planned:** a plugin like the Media Plugin (`../MediaPlugin`), and for the
 same reason: its scripts go into pages, so it ships as a team-signed app in
-/Applications that Voyager checks (`Voyager/Services/Plugins.swift`), the
+/Applications that Voyager checks (Voyager's `Voyager/Services/Plugins.swift`), the
 signed carrier of `Resources/manifest.json` and `Resources/Sites/*.js`, its
 trigger kind `page.restyle`. Unlike `media.click` there's no request to the
 app. With the plugin off in Settings, sites will be as they ship.
@@ -236,7 +237,7 @@ folder; scripts are then read from it whenever a browser view sets up its
 page scripts, so a relaunch is enough:
 
 ```sh
-open -n <Debug>/Voyager.app --args -RestyleDir "$PWD/Plugins/RestylePlugin/RestylePlugin/Resources"
+open -n <Debug>/Voyager.app --args -RestyleDir "$PWD/RestylePlugin/RestylePlugin/Resources"
 ```
 
 If that folder can't be read, the app's own scripts are used and the log
