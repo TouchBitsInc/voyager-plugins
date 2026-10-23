@@ -29,6 +29,7 @@ enum PluginProtocol {
     /// Settings while they're not installed.
     static let plugins: [(id: String, name: String)] = [
         ("com.touchbits.voyager.media-plugin", "Media Plugin"),
+        ("com.touchbits.voyager.restyle-plugin", "Restyle Plugin"),
     ]
     static func isPlugin(_ bundleID: String?) -> Bool {
         plugins.contains { $0.id == bundleID }
@@ -71,11 +72,20 @@ struct PluginManifest: Codable, Equatable {
 
     struct Trigger: Codable, Equatable {
         /// `media.click`: a plain click on a page's media, taken from the
-        /// page by the site's script.
+        /// page by the site's script. `page.restyle`: a site's own chrome
+        /// rearranged, by the `<domain>.js` scripts among the app's
+        /// resources — so it lists no media or sites.
         var kind: String
         /// `video`, `image`.
         var media: [String]
         var sites: [Site]
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            kind = try container.decode(String.self, forKey: .kind)
+            media = try container.decodeIfPresent([String].self, forKey: .media) ?? []
+            sites = try container.decodeIfPresent([Site].self, forKey: .sites) ?? []
+        }
     }
 
     struct Site: Codable, Equatable {

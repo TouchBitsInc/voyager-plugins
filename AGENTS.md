@@ -17,8 +17,10 @@ across them.
 - **The protocol lives in two places.** `Shared/PluginProtocol.swift` here,
   and its copy in Voyager. Change both together, and raise
   `protocolVersion` when a change isn't compatible.
-- **Voyager reads this checkout.** Debug builds of Voyager take the Restyle
-  Plugin's site scripts from a `voyager-plugins` checkout next to Voyager's
-  (`../voyager-plugins`).
+- **Installed, always.** Voyager only uses plugins installed in
+  /Applications and signed by the team, Debug builds included. To run Voyager
+  against this checkout, `Scripts/install-dev.sh` builds every plugin
+  team-signed and installs it, keeping released copies aside
+  (`--restore` puts them back).
 - **Open source.** Everything here is public. No secrets in the repo: keys
   and tokens live on the release Mac and in the repo's settings.

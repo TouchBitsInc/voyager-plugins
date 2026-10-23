@@ -1,0 +1,45 @@
+// Every target-level build setting for the Restyle Plugin lives here, as the
+// Media Plugin's do in MediaPlugin.xcconfig.
+//
+// The plugin is Voyager's site restyles, signed: an app that carries its
+// manifest and `Sites` scripts for Voyager to read and check. It never needs
+// to run, so it needs nothing beyond a signature.
+
+// MARK: - Platform
+
+MACOSX_DEPLOYMENT_TARGET = 14.0
+SWIFT_VERSION = 6.0
+// Apple silicon only, as Voyager.
+ARCHS = arm64
+SWIFT_EMIT_LOC_STRINGS = YES
+ALWAYS_SEARCH_USER_PATHS = NO
+
+// MARK: - Product
+
+PRODUCT_NAME = Voyager Restyle Plugin
+GENERATE_INFOPLIST_FILE = YES
+// Merged with the generated one: the URL scheme Voyager opens it by.
+INFOPLIST_FILE = RestylePlugin/Resources/Config/Info.plist
+INFOPLIST_KEY_CFBundleDisplayName = Restyle Plugin
+INFOPLIST_KEY_LSApplicationCategoryType = public.app-category.utilities
+// No Dock icon: it only ever shows a small window about itself.
+INFOPLIST_KEY_LSUIElement = YES
+ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon
+// Its own version, apart from the other plugins'. Not released yet; when it
+// is, it gets its own release workflow and Sparkle feed (the repo's
+// AGENTS.md: never the repo's "latest" release).
+MARKETING_VERSION = 0.1
+CURRENT_PROJECT_VERSION = 1000
+
+// MARK: - Identity
+
+PRODUCT_BUNDLE_IDENTIFIER = com.touchbits.voyager.restyle-plugin
+CODE_SIGN_STYLE = Automatic
+// Notarization needs the hardened runtime. Not sandboxed, as the Media
+// Plugin: Voyager reads it from /Applications either way.
+ENABLE_HARDENED_RUNTIME = YES
+ENABLE_APP_SANDBOX = NO
+
+SWIFT_ACTIVE_COMPILATION_CONDITIONS[config=Debug] = DEBUG
+LD_RUNPATH_SEARCH_PATHS = $(inherited) @executable_path/../Frameworks
+PRODUCT_MODULE_NAME = RestylePlugin

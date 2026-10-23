@@ -11,6 +11,10 @@ own that adds what Voyager's sandbox can't do by itself.
 To install a plugin, download its DMG, open it, and drag the app to
 Applications. Installed copies update themselves through Sparkle.
 
+Working on them: `Scripts/install-dev.sh` builds every plugin in this checkout
+and installs it, so Voyager uses the latest; `--restore` puts released copies
+back.
+
 ## Layout
 
 - `Shared/PluginProtocol.swift`: how Voyager and its plugins talk. Voyager

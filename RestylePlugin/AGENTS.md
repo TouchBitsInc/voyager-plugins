@@ -14,24 +14,18 @@ first answer, not a rule.
 
 ## How it fits Voyager
 
-**Today:** Debug builds only. The plugin's `Sites` folder is a resource of
-Voyager's Debug builds (excluded from Release in `Voyager.xcconfig`), so
-every Debug build, a plain Run in Xcode included, carries this checkout's
-scripts, and Voyager's `Voyager/Scenes/Browser/PageRestyle.swift` loads
-them. There's
-no plugin app yet, and Settings' plugin toggle doesn't affect restyles;
-`-RestyleOff YES` at launch turns them all off. Each site's script goes
-into its pages at document start, main frame only, in the default content
-world — next to the muter and media clicks in
-`BrowserViewModel.installUserScripts()` — and the ⋯ menu's Styles lists
-the page's styles.
-
-**Planned:** a plugin like the Media Plugin (`../MediaPlugin`), and for the
-same reason: its scripts go into pages, so it ships as a team-signed app in
-/Applications that Voyager checks (Voyager's `Voyager/Services/Plugins.swift`), the
-signed carrier of `Resources/manifest.json` and `Resources/Sites/*.js`, its
-trigger kind `page.restyle`. Unlike `media.click` there's no request to the
-app. With the plugin off in Settings, sites will be as they ship.
+An app of its own, like the Media Plugin (`../MediaPlugin`), and for the
+same reason: its scripts go into pages, so it's an app signed by the team,
+in /Applications, that Voyager checks (Voyager's
+`Voyager/Services/Plugins.swift`) before reading its `manifest.json` (trigger
+kind `page.restyle`) and its `<domain>.js` scripts. The app itself never needs
+to run; opened, it only says what it is. With it off in Voyager's Settings,
+or not installed, sites are as they ship. Each site's script goes into its
+pages at document start, main frame only, in the default content world —
+next to the muter and media clicks in `BrowserViewModel.installUserScripts()`
+— and the ⋯ menu's Styles lists the page's styles. Not released yet: when it
+is, it gets its own release workflow and Sparkle feed, never the repo's
+"latest" release (the repo's `AGENTS.md`).
 
 Its icon is `Design/icon.svg` (a page whose menu has moved into a bottom
 bar: flat, the macOS 824pt tile on a 1024 canvas), rendered into
@@ -226,12 +220,14 @@ Common to all:
 
 ## Trying one
 
-On the real site, in a Debug build of Voyager. Every Debug build carries
-this checkout's `Sites` folder (Xcode copies it again when a script
-changes), so an edit shows after a rebuild and relaunch; Release builds
-don't carry it, and will take the scripts from the plugin app.
+On the real site, in a Debug build of Voyager, with this checkout's
+plugins installed: `Scripts/install-dev.sh` (the repo's) builds every plugin
+team-signed and installs it in /Applications, keeping released copies aside
+(`--restore` puts them back). Run it after an edit or a pull; Voyager picks
+the plugins up when it next comes to the front, and a page loaded after
+that has the new scripts.
 
-To try edits without rebuilding, launch an unsigned Debug build (outside
+To try edits without reinstalling, launch an unsigned Debug build (outside
 the sandbox, which can't read a checkout) with the plugin's `Resources`
 folder; scripts are then read from it whenever a browser view sets up its
 page scripts, so a relaunch is enough:
@@ -240,9 +236,9 @@ page scripts, so a relaunch is enough:
 open -n <Debug>/Voyager.app --args -RestyleDir "$PWD/RestylePlugin/RestylePlugin/Resources"
 ```
 
-If that folder can't be read, the app's own scripts are used and the log
-says so. `-RestyleOff YES` turns every restyle off, to see sites as they
-ship.
+If that folder can't be read, the installed plugin's scripts are used and
+the log says so. `-RestyleOff YES` turns every restyle off, to see sites as
+they ship.
 
 The ⋯ menu's Styles switches between the site's styles live. The choice is
 kept in the site's own storage.
