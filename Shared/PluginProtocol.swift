@@ -1,3 +1,6 @@
+// Voyager keeps a copy of this file (its `Shared/PluginProtocol.swift`):
+// change both together, and raise `protocolVersion` when a change isn't
+// compatible.
 import Foundation
 
 /// How Voyager and its plugins talk. A plugin is an app of its own, outside
