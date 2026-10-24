@@ -35,9 +35,15 @@ if [ "${1:-}" = "--restore" ]; then
 fi
 
 if [ -n "${1:-}" ]; then
-  wanted="${1%Plugin}Plugin"
-  [ -d "$wanted" ] || { echo "error: no plugin '$1' (have: ${plugins[*]})" >&2; exit 1; }
-  plugins=("$wanted")
+  # By folder name, in any case, "Plugin" optional: restyle, RestylePlugin.
+  wanted=$(tr '[:upper:]' '[:lower:]' <<< "$1")
+  wanted="${wanted%plugin}plugin"
+  match=""
+  for plugin in "${plugins[@]}"; do
+    [ "$(tr '[:upper:]' '[:lower:]' <<< "$plugin")" = "$wanted" ] && match=$plugin
+  done
+  [ -n "$match" ] || { echo "error: no plugin '$1' (have: ${plugins[*]})" >&2; exit 1; }
+  plugins=("$match")
 fi
 
 mkdir -p "$backups"
@@ -64,9 +70,12 @@ for plugin in "${plugins[@]}"; do
     || { echo "error: $name isn't signed by the team" >&2; exit 1; }
 
   installed="/Applications/$name"
-  if [ -e "$installed" ] && [ ! -e "$backups/$name" ] \
+  # A released copy installed — first time, or one Sparkle updated a dev
+  # build to since — is the one to keep, replacing any older backup.
+  if [ -e "$installed" ] \
      && [[ $(codesign -dv --verbose=2 "$installed" 2>&1) == *"Authority=Developer ID Application"* ]]; then
     echo "    keeping the released $name in $backups"
+    rm -rf "$backups/$name"
     mv "$installed" "$backups/$name"
   fi
   pkill -x "${name%.app}" 2>/dev/null || true

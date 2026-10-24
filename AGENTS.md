@@ -14,6 +14,10 @@ across them.
   releases stay the latest: every other plugin's release is published with
   `--latest=false` and a feed URL of its own. No repo may ever take the old
   name.
+- **Tags.** The Media Plugin's releases are tagged by plain version (`0.2.3`),
+  as they always were; every other plugin's carry its name (`restyle-0.1`),
+  and its workflow reads only its own tags, as the Media one reads only
+  plain ones.
 - **The protocol lives in two places.** `Shared/PluginProtocol.swift` here,
   and its copy in Voyager. Change both together, and raise
   `protocolVersion` when a change isn't compatible.

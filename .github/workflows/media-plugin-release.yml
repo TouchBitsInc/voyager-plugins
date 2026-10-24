@@ -173,8 +173,10 @@ jobs:
         run: |
           [ -n "$GH_TOKEN" ] || unset GH_TOKEN
           notes="$RUNNER_TEMP/notes.md"
-          # The plugin's changes since the release before: its notes name the commit it came from.
-          previous=$(gh release list -R "$PUBLIC_REPO" --limit 1 --json tagName --jq '.[0].tagName' || true)
+          # The plugin's changes since its release before: its notes name the commit it came from.
+          # The Media Plugin's own releases only — plain version tags; other plugins' carry a prefix.
+          previous=$(gh release list -R "$PUBLIC_REPO" --limit 200 --json tagName --jq '.[].tagName' \
+            | grep -E '^[0-9]+\.[0-9]+(\.[0-9]+)?$' | grep -vx "$VERSION" | sort -V | tail -1 || true)
           from=""
           [ -n "$previous" ] && from=$(gh release view "$previous" -R "$PUBLIC_REPO" --json body --jq .body \
             | sed -n 's/^Source: \([0-9a-f]\{40\}\)$/\1/p' | head -1)
